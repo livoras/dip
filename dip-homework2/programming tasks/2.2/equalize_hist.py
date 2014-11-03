@@ -1,37 +1,31 @@
+import math
 
-import matplotlib
-from numpy.random import randn
-import matplotlib.pyplot as plt
-from matplotlib.ticker import FuncFormatter
+from PIL import Image
+from plot_hist import plot_hist, getGrayFrequencies
 
-def to_percent(y, position):
-    # Ignore the passed in position. This has the effect of scaling the default
-    # tick locations.
-    s = str(100 * y)
+def equalize_hist(img):
+    width, height = img.size
+    total = width * height
+    grayData, pixels = getGrayFrequencies(img)
+    transferedGrays = []
+    acc = 0.0
+    for gray in grayData:
+        acc += gray["count"]
+        val = math.floor((acc / total) * 255)
+        transferedGrays.append(val)
+    return createNewImageWithGrays(img, transferedGrays)
 
-    # The percent symbol needs escaping in latex
-    if matplotlib.rcParams['text.usetex'] == True:
-        return s + r'$\%$'
-    else:
-        return s + '%'
+def createNewImageWithGrays(img, transferedGrays):
+    newImg = img.copy()
+    width, height = newImg.size
+    for x in xrange(width):
+        for y in xrange(height):
+            currentGray = newImg.getpixel((x, y))
+            newImg.putpixel((x, y), transferedGrays[currentGray])
+    return newImg
 
-x = randn(5000)
-
-# Make a normed histogram. It'll be multiplied by 100 later.
-plt.hist(x, bins=50, normed=True)
-
-# Create the formatter using the function to_percent. This multiplies all the
-# default labels by 100, making them all percentages
-formatter = FuncFormatter(to_percent)
-
-# Set the formatter
-plt.gca().yaxis.set_major_formatter(formatter)
-
-plt.show()
-
-# def plot_hist():
-#     pass
-
-
-# if __name__ == "__main__":
-#     print 'fuck'
+if __name__ == "__main__":
+    img = Image.open("49.png")
+    newImg = equalize_hist(img)
+    newImg.save("49_after_equalize_hist.png")
+    plot_hist(newImg)
